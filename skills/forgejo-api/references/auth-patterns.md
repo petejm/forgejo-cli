@@ -2,6 +2,8 @@
 
 Complete, working authentication patterns for all 3 auth methods. Read this file when constructing curl commands that require authentication.
 
+OAuth2 access tokens from Forgejo's OAuth2 provider work with the same `Authorization: Bearer $TOKEN` header — use `token-cmd` to retrieve them.
+
 ---
 
 ## Section 1: Config File Format
@@ -81,6 +83,12 @@ set +x
 OP_USER=$(op item get "$OP_ITEM" --fields "$OP_USER_FIELD" --reveal)
 OP_PASS=$(op item get "$OP_ITEM" --fields "$OP_PASS_FIELD" --reveal)
 HOST=$(echo "$FORGEJO_URL" | sed 's|https\?://||' | sed 's|/.*||')
+
+# Validate credentials contain no newlines (would break netrc format)
+if [[ "$OP_USER" == *$'\n'* ]] || [[ "$OP_PASS" == *$'\n'* ]]; then
+  echo "Error: credential contains newline — check 1Password field" >&2
+  return 1
+fi
 
 # CRITICAL: use --netrc-file with process substitution, NEVER curl -u
 curl -s -w '\n%{http_code}' \

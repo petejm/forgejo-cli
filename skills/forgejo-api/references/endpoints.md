@@ -190,7 +190,7 @@ curl -s -w '\n%{http_code}' \
 
 `POST /api/v1/repos/{owner}/{repo}/pulls/{index}/merge`
 
-Body: `{"Do":"merge","merge_message_field":"<optional>"}` (`Do` values: merge, rebase, squash, rebase-merge)
+Body: `{"Do":"merge","MergeMessageField":"<optional>"}` (`Do` values: merge, rebase, squash, rebase-merge)
 
 ```bash
 curl -s -w '\n%{http_code}' \
@@ -252,7 +252,7 @@ curl -s -w '\n%{http_code}' \
 
 `POST /api/v1/admin/users`
 
-Body: `{"email":"<email>","login_name":"<username>","password":"<strong-random-password>","must_change_password":true,"source_id":0}`
+Body: `{"email":"<email>","username":"<username>","password":"<strong-random-password>","must_change_password":true,"source_id":0}`
 
 NOTE: Generate a strong random password — do not hardcode a weak value. Use `openssl rand -base64 18` or similar, and communicate it to the admin out-of-band. `must_change_password: true` ensures the user sets their own password on first login.
 
@@ -261,7 +261,7 @@ curl -s -w '\n%{http_code}' \
   --connect-timeout 10 --max-time 30 \
   -H "Authorization: token $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"email":"user@example.org","login_name":"newuser","password":"<generated-strong-password>","must_change_password":true,"source_id":0}' \
+  -d '{"email":"user@example.org","username":"newuser","password":"<generated-strong-password>","must_change_password":true,"source_id":0}' \
   "${FORGEJO_URL}/api/v1/admin/users"
 ```
 

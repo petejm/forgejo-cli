@@ -75,6 +75,8 @@ Auth flow in 4 steps:
 - `op`: call `op item get` with the configured item and field IDs
 - `env`: read `FORGEJO_TOKEN` from the environment
 
+Always verify the token is non-empty before using it. An empty token means the credential command failed.
+
 **Step 3:** Construct the curl command **inline** with auth arguments.
 
 **CRITICAL RULE**: Process substitution `<(echo ...)` MUST appear inline in the curl command. It cannot be captured as a shell variable or passed as an argument. Always construct the complete curl command in a single Bash invocation.
@@ -82,6 +84,8 @@ Auth flow in 4 steps:
 Quick auth patterns (full examples in `references/auth-patterns.md`):
 - token-cmd/env: `-H "Authorization: token $TOKEN"`
 - op basic auth: `--netrc-file <(echo "machine $HOST login $USER password $PASS")`
+
+Note: Forgejo also accepts `Authorization: Bearer $TOKEN` (the modern standard). Both `token` and `Bearer` formats work identically.
 
 **Step 4:** Check the HTTP status code before treating credentials as valid. If credentials resolve but the API returns 401, re-read gotchas #1 and #3 before resetting passwords.
 
