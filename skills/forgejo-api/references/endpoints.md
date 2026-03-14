@@ -16,6 +16,7 @@ Body: `{"name":"<repo>","private":true|false,"description":"<optional>","auto_in
 
 ```bash
 curl -s -w '\n%{http_code}' \
+  --connect-timeout 10 --max-time 30 \
   -H "Authorization: token $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"myrepo","private":true,"auto_init":false}' \
@@ -32,6 +33,7 @@ No body. Returns array of repo objects.
 
 ```bash
 curl -s -w '\n%{http_code}' \
+  --connect-timeout 10 --max-time 30 \
   -H "Authorization: token $TOKEN" \
   "${FORGEJO_URL}/api/v1/user/repos?page=1&limit=50"
 ```
@@ -44,6 +46,7 @@ No body.
 
 ```bash
 curl -s -w '\n%{http_code}' \
+  --connect-timeout 10 --max-time 30 \
   -H "Authorization: token $TOKEN" \
   "${FORGEJO_URL}/api/v1/users/someuser/repos?page=1&limit=50"
 ```
@@ -56,6 +59,7 @@ No body. Returns single repo object.
 
 ```bash
 curl -s -w '\n%{http_code}' \
+  --connect-timeout 10 --max-time 30 \
   -H "Authorization: token $TOKEN" \
   "${FORGEJO_URL}/api/v1/repos/owner/reponame"
 ```
@@ -70,6 +74,7 @@ No body. Returns 204 on success.
 
 ```bash
 curl -s -w '\n%{http_code}' \
+  --connect-timeout 10 --max-time 30 \
   -X DELETE \
   -H "Authorization: token $TOKEN" \
   "${FORGEJO_URL}/api/v1/repos/owner/reponame"
@@ -83,6 +88,7 @@ No body. Returns `{"data": [...], "ok": true}`.
 
 ```bash
 curl -s -w '\n%{http_code}' \
+  --connect-timeout 10 --max-time 30 \
   -H "Authorization: token $TOKEN" \
   "${FORGEJO_URL}/api/v1/repos/search?q=myquery&limit=50"
 ```
@@ -99,6 +105,7 @@ Query params: `type` (issues|pulls), `state` (open|closed|all), `labels`, `miles
 
 ```bash
 curl -s -w '\n%{http_code}' \
+  --connect-timeout 10 --max-time 30 \
   -H "Authorization: token $TOKEN" \
   "${FORGEJO_URL}/api/v1/repos/owner/repo/issues?type=issues&state=open&page=1&limit=50"
 ```
@@ -111,6 +118,7 @@ Body: `{"title":"<title>","body":"<optional>","assignees":[],"labels":[],"milest
 
 ```bash
 curl -s -w '\n%{http_code}' \
+  --connect-timeout 10 --max-time 30 \
   -H "Authorization: token $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"title":"Bug: something broke","body":"Description here"}' \
@@ -125,6 +133,7 @@ Body: `{"body":"<comment text>"}`
 
 ```bash
 curl -s -w '\n%{http_code}' \
+  --connect-timeout 10 --max-time 30 \
   -H "Authorization: token $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"body":"My comment here"}' \
@@ -139,6 +148,7 @@ Body: `{"state":"closed"}` (or `"open"` to reopen)
 
 ```bash
 curl -s -w '\n%{http_code}' \
+  --connect-timeout 10 --max-time 30 \
   -X PATCH \
   -H "Authorization: token $TOKEN" \
   -H "Content-Type: application/json" \
@@ -156,6 +166,7 @@ curl -s -w '\n%{http_code}' \
 
 ```bash
 curl -s -w '\n%{http_code}' \
+  --connect-timeout 10 --max-time 30 \
   -H "Authorization: token $TOKEN" \
   "${FORGEJO_URL}/api/v1/repos/owner/repo/pulls?state=open&page=1&limit=50"
 ```
@@ -168,6 +179,7 @@ Body: `{"title":"<title>","head":"<branch>","base":"<target>","body":"<optional>
 
 ```bash
 curl -s -w '\n%{http_code}' \
+  --connect-timeout 10 --max-time 30 \
   -H "Authorization: token $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"title":"Fix the bug","head":"feature-branch","base":"main"}' \
@@ -182,6 +194,7 @@ Body: `{"Do":"merge","merge_message_field":"<optional>"}` (`Do` values: merge, r
 
 ```bash
 curl -s -w '\n%{http_code}' \
+  --connect-timeout 10 --max-time 30 \
   -H "Authorization: token $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"Do":"merge"}' \
@@ -200,6 +213,7 @@ No body. Good for auth verification.
 
 ```bash
 curl -s -w '\n%{http_code}' \
+  --connect-timeout 10 --max-time 30 \
   -H "Authorization: token $TOKEN" \
   "${FORGEJO_URL}/api/v1/user"
 ```
@@ -212,6 +226,7 @@ Body: `{"username":"<orgname>","visibility":"public|private","description":"<opt
 
 ```bash
 curl -s -w '\n%{http_code}' \
+  --connect-timeout 10 --max-time 30 \
   -H "Authorization: token $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"username":"my-org","visibility":"private"}' \
@@ -224,6 +239,7 @@ curl -s -w '\n%{http_code}' \
 
 ```bash
 curl -s -w '\n%{http_code}' \
+  --connect-timeout 10 --max-time 30 \
   -H "Authorization: token $TOKEN" \
   "${FORGEJO_URL}/api/v1/orgs/my-org/repos?page=1&limit=50"
 ```
@@ -236,13 +252,16 @@ curl -s -w '\n%{http_code}' \
 
 `POST /api/v1/admin/users`
 
-Body: `{"email":"<email>","login_name":"<username>","password":"<pass>","must_change_password":true,"source_id":0}`
+Body: `{"email":"<email>","login_name":"<username>","password":"<strong-random-password>","must_change_password":true,"source_id":0}`
+
+NOTE: Generate a strong random password — do not hardcode a weak value. Use `openssl rand -base64 18` or similar, and communicate it to the admin out-of-band. `must_change_password: true` ensures the user sets their own password on first login.
 
 ```bash
 curl -s -w '\n%{http_code}' \
+  --connect-timeout 10 --max-time 30 \
   -H "Authorization: token $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"email":"user@example.org","login_name":"newuser","password":"changeme","must_change_password":true,"source_id":0}' \
+  -d '{"email":"user@example.org","login_name":"newuser","password":"<generated-strong-password>","must_change_password":true,"source_id":0}' \
   "${FORGEJO_URL}/api/v1/admin/users"
 ```
 
@@ -252,6 +271,7 @@ curl -s -w '\n%{http_code}' \
 
 ```bash
 curl -s -w '\n%{http_code}' \
+  --connect-timeout 10 --max-time 30 \
   -H "Authorization: token $TOKEN" \
   "${FORGEJO_URL}/api/v1/admin/users?page=1&limit=50"
 ```
@@ -270,6 +290,7 @@ Body: `{"name":"<token-name>","scopes":["write:repository","write:issue","write:
 
 ```bash
 curl -s -w '\n%{http_code}' \
+  --connect-timeout 10 --max-time 30 \
   --netrc-file <(echo "machine $HOST login $USER password $PASS") \
   -H "Content-Type: application/json" \
   -d '{"name":"my-token","scopes":["write:repository","write:issue"]}' \
@@ -284,6 +305,7 @@ Also requires basic auth.
 
 ```bash
 curl -s -w '\n%{http_code}' \
+  --connect-timeout 10 --max-time 30 \
   --netrc-file <(echo "machine $HOST login $USER password $PASS") \
   "${FORGEJO_URL}/api/v1/users/${USER}/tokens"
 ```
@@ -296,13 +318,15 @@ For operations beyond the supported 20, discover endpoints from the instance its
 
 ```bash
 # List all endpoint paths matching a keyword
+KEYWORD="release"  # change this
 curl -s "${FORGEJO_URL}/swagger.v1.json" | python3 -c "
 import json, sys
+keyword = sys.argv[1] if len(sys.argv) > 1 else 'release'
 spec = json.load(sys.stdin)
-for path in spec['paths']:
-    if 'keyword' in path:
+for path, methods in spec['paths'].items():
+    if keyword in path or any(keyword in str(op) for op in methods.values()):
         print(path)
-"
+" "$KEYWORD"
 
 # Get full operation details including request body schema
 curl -s "${FORGEJO_URL}/swagger.v1.json" | python3 -c "

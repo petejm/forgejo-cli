@@ -93,11 +93,13 @@ Every API call follows this canonical pattern — no deviation:
 
 ```bash
 response=$(curl -s -w '\n%{http_code}' \
+  --connect-timeout 10 --max-time 30 \
   -H "Authorization: token $TOKEN" \
   -H "Content-Type: application/json" \
   "${FORGEJO_URL}/api/v1/<endpoint>")
 http_code=$(echo "$response" | tail -1)
 body=$(echo "$response" | sed '$d')
+[ "$http_code" = "204" ] && body=""
 
 # Always check status before parsing
 if [[ "$http_code" != "200" && "$http_code" != "201" && "$http_code" != "204" ]]; then
@@ -133,7 +135,7 @@ fi
 - `GET /api/v1/repos/search?q={query}` — search repos
 
 **Issues:**
-- `GET /api/v1/repos/{owner}/{repo}/issues` — list issues
+- `GET /api/v1/repos/{owner}/{repo}/issues?type=issues&state=open` — list issues (note: without `?type=issues`, this endpoint returns both issues AND pull requests)
 - `POST /api/v1/repos/{owner}/{repo}/issues` — create issue
 - `POST /api/v1/repos/{owner}/{repo}/issues/{index}/comments` — comment on issue
 - `PATCH /api/v1/repos/{owner}/{repo}/issues/{index}` — close/reopen issue
@@ -163,23 +165,31 @@ fi
 Forgejo uses `page` + `limit` query params and a `x-total-count` response header. Default page size 30, max 50.
 
 ```bash
+if ! command -v jq >/dev/null 2>&1; then
+  echo "Warning: jq not found — pagination disabled, only first page returned" >&2
+fi
 page=1
 all_results="[]"
 while true; do
   response=$(curl -s -w '\n%{http_code}' \
+    --connect-timeout 10 --max-time 30 \
     -H "Authorization: token $TOKEN" \
     "${FORGEJO_URL}/api/v1/<endpoint>?page=$page&limit=50")
   http_code=$(echo "$response" | tail -1)
   body=$(echo "$response" | sed '$d')
   [[ "$http_code" != "200" ]] && { echo "Error $http_code" >&2; exit 1; }
-  count=$(echo "$body" | python3 -c "import json,sys; print(len(json.load(sys.stdin)))")
-  all_results=$(printf '%s\n%s' "$all_results" "$body" | python3 -c "import json,sys; data=sys.stdin.read(); parts=[json.loads(p) for p in data.strip().split('\n') if p.strip()]; print(json.dumps(sum(parts,[])))" 2>/dev/null || echo "$body")
-  [[ "$count" -lt 50 ]] && break
+  if command -v jq >/dev/null 2>&1; then
+    all_results=$(jq -n --argjson a "$all_results" --argjson b "$body" '$a + $b')
+    count=$(echo "$body" | jq 'length')
+    [[ "$count" -lt 50 ]] && break
+  else
+    # jq unavailable — return first page only
+    all_results="$body"
+    break
+  fi
   page=$((page + 1))
 done
 ```
-
-Note: use jq if available (`command -v jq`) as it's cleaner for JSON accumulation. Fall back to python3 otherwise.
 
 ---
 
@@ -215,14 +225,15 @@ For endpoints not in the supported 20, the Forgejo Swagger spec is the authorita
 
 ```bash
 # Find endpoints matching a keyword
+KEYWORD="release"  # change this
 curl -s "${FORGEJO_URL}/swagger.v1.json" | python3 -c "
-import json, sys, re
-keyword = 'release'  # change this
+import json, sys
+keyword = sys.argv[1] if len(sys.argv) > 1 else 'release'
 spec = json.load(sys.stdin)
 for path, methods in spec['paths'].items():
     if keyword in path or any(keyword in str(op) for op in methods.values()):
         print(path)
-"
+" "$KEYWORD"
 
 # Get full operation details
 curl -s "${FORGEJO_URL}/swagger.v1.json" | python3 -c "

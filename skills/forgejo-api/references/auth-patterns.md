@@ -35,6 +35,8 @@ FORGEJO_URL=$(grep "^forgejo_url:" ~/.claude/forgejo-cli.local.md | sed 's/^forg
 AUTH_METHOD=$(grep "^auth_method:" ~/.claude/forgejo-cli.local.md | sed 's/^auth_method: *//' | tr -d '"'"'" | sed 's/#.*//' | tr -d ' ')
 ```
 
+**Note:** The `.local.md` file should contain ONLY YAML frontmatter between `---` delimiters. Do not add markdown content below the closing `---`. Anything after the closing delimiter is ignored by the parser and may cause unexpected grep results.
+
 ---
 
 ## Section 3: token-cmd Auth (Happy Path)
@@ -45,13 +47,16 @@ The preferred method — works with any secret manager.
 # Read token_cmd from config
 TOKEN_CMD=$(grep "^token_cmd:" ~/.claude/forgejo-cli.local.md | sed 's/^token_cmd: *//' | sed 's/^"\(.*\)"$/\1/')
 # Execute it to get the token (set +x prevents trace leakage)
+# Trust boundary: token_cmd is user-configured — it runs with the same privilege as any
+# shell alias or .envrc command. The command value is logged (not the token) so the user
+# can verify what is being invoked.
 set +x
 TOKEN=$(eval "$TOKEN_CMD")
-set -x 2>/dev/null || true
+if [ -z "$TOKEN" ]; then echo "Error: token_cmd produced no output" >&2; return; fi
 # Use in curl
 curl -s -w '\n%{http_code}' \
+  --connect-timeout 10 --max-time 30 \
   -H "Authorization: token $TOKEN" \
-  -H "Content-Type: application/json" \
   "${FORGEJO_URL}/api/v1/user"
 ```
 
@@ -76,12 +81,11 @@ set +x
 OP_USER=$(op item get "$OP_ITEM" --fields "$OP_USER_FIELD" --reveal)
 OP_PASS=$(op item get "$OP_ITEM" --fields "$OP_PASS_FIELD" --reveal)
 HOST=$(echo "$FORGEJO_URL" | sed 's|https\?://||' | sed 's|/.*||')
-set -x 2>/dev/null || true
 
 # CRITICAL: use --netrc-file with process substitution, NEVER curl -u
 curl -s -w '\n%{http_code}' \
+  --connect-timeout 10 --max-time 30 \
   --netrc-file <(echo "machine $HOST login $OP_USER password $OP_PASS") \
-  -H "Content-Type: application/json" \
   "${FORGEJO_URL}/api/v1/user"
 ```
 
@@ -101,8 +105,8 @@ if [ -z "$TOKEN" ]; then
   exit 1
 fi
 curl -s -w '\n%{http_code}' \
+  --connect-timeout 10 --max-time 30 \
   -H "Authorization: token $TOKEN" \
-  -H "Content-Type: application/json" \
   "${FORGEJO_URL}/api/v1/user"
 ```
 
@@ -114,6 +118,7 @@ The template every API call follows — no deviation:
 
 ```bash
 response=$(curl -s -w '\n%{http_code}' \
+  --connect-timeout 10 --max-time 30 \
   <auth arguments inline here> \
   -H "Content-Type: application/json" \
   "${FORGEJO_URL}/api/v1/<endpoint>")
