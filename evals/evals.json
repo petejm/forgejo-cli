@@ -1,0 +1,47 @@
+[
+  {
+    "id": "create-private-repo",
+    "description": "Create a private repo on Forgejo",
+    "prompt": "Create a private repo called test-repo on my Forgejo instance",
+    "expected": {
+      "skill_triggered": "forgejo-cli:forgejo-api",
+      "reads_config": true,
+      "http_method": "POST",
+      "endpoint": "/api/v1/user/repos",
+      "request_body_contains": ["name", "private"],
+      "checks_http_status": true,
+      "confirmation_required": false
+    },
+    "notes": "Happy path. Should read .local.md, resolve auth, POST to /user/repos with {\"name\":\"test-repo\",\"private\":true}. Should verify HTTP 201 before reporting success."
+  },
+  {
+    "id": "list-open-issues",
+    "description": "List all open issues in a repo",
+    "prompt": "List all open issues in owner/myproject",
+    "expected": {
+      "skill_triggered": "forgejo-cli:forgejo-api",
+      "reads_config": true,
+      "http_method": "GET",
+      "endpoint": "/api/v1/repos/owner/myproject/issues",
+      "query_params_contain": ["state=open"],
+      "handles_pagination": true,
+      "confirmation_required": false
+    },
+    "notes": "List operation. Should paginate if result count = 50. Should show issue numbers, titles, and states. Query params should include state=open and type=issues."
+  },
+  {
+    "id": "delete-repo-confirm",
+    "description": "Delete a repo — requires explicit confirmation",
+    "prompt": "Delete the repo owner/old-project",
+    "expected": {
+      "skill_triggered": "forgejo-cli:forgejo-api",
+      "reads_config": true,
+      "http_method": "DELETE",
+      "endpoint": "/api/v1/repos/owner/old-project",
+      "confirmation_required": true,
+      "shows_command_before_executing": true,
+      "does_not_execute_without_confirmation": true
+    },
+    "notes": "Destructive operation. MUST show user what will happen, show the redacted curl command, and wait for explicit confirmation before executing. Should NOT execute on the initial prompt alone."
+  }
+]

@@ -1,0 +1,15 @@
+# Local config — contains pointers to secrets, never commit
+*.local.md
+
+# Secrets
+.env
+*.pem
+*.key
+credentials*
+*_credentials*
+
+# Editor and OS artifacts
+.DS_Store
+*.swp
+*.swo
+*~
