@@ -15,9 +15,9 @@ The config file lives at `~/.claude/forgejo-cli.local.md`. Claude reads it with 
 forgejo_url: https://forgejo.example.org
 auth_method: token-cmd      # token-cmd | op | env
 # token-cmd: any command that outputs a token to stdout
-token_cmd: "op item get gondolin --fields password --reveal"
+token_cmd: "op item get my-forgejo --fields password --reveal"
 # op: 1Password direct integration
-op_item: gondolin
+op_item: my-forgejo
 op_username_field: username   # field ID, NOT the display label
 op_password_field: password   # field ID, NOT the display label
 ---
