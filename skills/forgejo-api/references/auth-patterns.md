@@ -23,8 +23,6 @@ op_password_field: password   # field ID, NOT the display label
 ---
 ```
 
-The file is at `~/.claude/forgejo-cli.local.md`. Claude reads it with the Read tool. The file stores pointers to secrets, never secrets themselves. Gitignored — user creates it at setup.
-
 ---
 
 ## Section 2: How Claude Reads the Config
