@@ -157,7 +157,7 @@ The 20 built-in operations cover the most common workflows. For anything beyond 
 # Search the Swagger spec for endpoints matching a keyword
 curl -s "https://forgejo.example.org/swagger.v1.json" | python3 -c "
 import json, sys
-keyword = sys.argv[1] if len(sys.argv) > 1 else 'release'
+keyword = sys.argv[1] if len(sys.argv) > 1 else 'webhook'
 spec = json.load(sys.stdin)
 for path in spec['paths']:
     if keyword in path:

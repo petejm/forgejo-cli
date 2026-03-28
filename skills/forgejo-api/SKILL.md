@@ -101,13 +101,13 @@ response=$(curl -s -w '\n%{http_code}' \
   -H "Authorization: token $TOKEN" \
   -H "Content-Type: application/json" \
   "${FORGEJO_URL}/api/v1/<endpoint>")
-http_code=$(echo "$response" | tail -1)
-body=$(echo "$response" | sed '$d')
+http_code=$(printf '%s\n' "$response" | tail -1)
+body=$(printf '%s\n' "$response" | sed '$d')
 [ "$http_code" = "204" ] && body=""
 
 # Always check status before parsing
 if [[ "$http_code" != "200" && "$http_code" != "201" && "$http_code" != "204" ]]; then
-  echo "API error $http_code: $(echo "$body" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("message","unknown"))')" >&2
+  echo "API error $http_code: $(printf '%s\n' "$body" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("message","unknown"))')" >&2
   exit 1
 fi
 ```
@@ -154,9 +154,11 @@ fi
 - `POST /api/v1/orgs` — create org
 - `GET /api/v1/orgs/{org}/repos` — list org repos
 
+**Admin (read-only):**
+- `GET /api/v1/admin/users` — list users
+
 **Admin (DESTRUCTIVE — confirm before executing):**
 - `POST /api/v1/admin/users` — create user
-- `GET /api/v1/admin/users` — list users
 
 **Tokens (requires basic auth even with a token):**
 - `POST /api/v1/users/{username}/tokens` — create API token
@@ -175,16 +177,17 @@ fi
 page=1
 all_results="[]"
 while true; do
+  [[ $page -gt 100 ]] && { echo "Warning: pagination exceeded 100 pages, stopping" >&2; break; }
   response=$(curl -s -w '\n%{http_code}' \
     --connect-timeout 10 --max-time 30 \
     -H "Authorization: token $TOKEN" \
     "${FORGEJO_URL}/api/v1/<endpoint>?page=$page&limit=50")
-  http_code=$(echo "$response" | tail -1)
-  body=$(echo "$response" | sed '$d')
+  http_code=$(printf '%s\n' "$response" | tail -1)
+  body=$(printf '%s\n' "$response" | sed '$d')
   [[ "$http_code" != "200" ]] && { echo "Error $http_code" >&2; exit 1; }
   if command -v jq >/dev/null 2>&1; then
     all_results=$(jq -n --argjson a "$all_results" --argjson b "$body" '$a + $b')
-    count=$(echo "$body" | jq 'length')
+    count=$(printf '%s\n' "$body" | jq 'length')
     [[ "$count" -lt 50 ]] && break
   else
     # jq unavailable — return first page only

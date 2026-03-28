@@ -50,9 +50,12 @@ TOKEN_CMD=$(grep "^token_cmd:" ~/.claude/forgejo-cli.local.md | sed 's/^token_cm
 # Trust boundary: token_cmd is user-configured — it runs with the same privilege as any
 # shell alias or .envrc command. The command value is logged (not the token) so the user
 # can verify what is being invoked.
+# SECURITY WARNING: Never accept token_cmd values from untrusted sources or third-party
+# plugin configs. A compromised .local.md file enables arbitrary code execution at the
+# privilege level of the Claude Code process.
 set +x
 TOKEN=$(eval "$TOKEN_CMD")
-if [ -z "$TOKEN" ]; then echo "Error: token_cmd produced no output" >&2; return; fi
+if [ -z "$TOKEN" ]; then echo "Error: token_cmd produced no output" >&2; exit 1; fi
 # Use in curl
 curl -s -w '\n%{http_code}' \
   --connect-timeout 10 --max-time 30 \
@@ -85,7 +88,7 @@ HOST=$(echo "$FORGEJO_URL" | sed 's|https\?://||' | sed 's|/.*||')
 # Validate credentials contain no newlines (would break netrc format)
 if [[ "$OP_USER" == *$'\n'* ]] || [[ "$OP_PASS" == *$'\n'* ]]; then
   echo "Error: credential contains newline — check 1Password field" >&2
-  return 1
+  exit 1
 fi
 
 # CRITICAL: use --netrc-file with process substitution, NEVER curl -u
@@ -128,8 +131,8 @@ response=$(curl -s -w '\n%{http_code}' \
   <auth arguments inline here> \
   -H "Content-Type: application/json" \
   "${FORGEJO_URL}/api/v1/<endpoint>")
-http_code=$(echo "$response" | tail -1)
-body=$(echo "$response" | sed '$d')
+http_code=$(printf '%s\n' "$response" | tail -1)
+body=$(printf '%s\n' "$response" | sed '$d')
 ```
 
 Always check http_code before parsing body. Error classification:

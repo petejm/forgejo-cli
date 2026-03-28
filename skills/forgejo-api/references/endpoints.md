@@ -246,15 +246,34 @@ curl -s -w '\n%{http_code}' \
 
 ---
 
-## Admin (2 operations) — DESTRUCTIVE — confirm before executing
+## Admin — Read-only (1 operation)
 
-### 17. Create user
+### 17. List users
+
+`GET /api/v1/admin/users?page=1&limit=50`
+
+No body. Requires admin token. Returns array of user objects.
+
+```bash
+curl -s -w '\n%{http_code}' \
+  --connect-timeout 10 --max-time 30 \
+  -H "Authorization: token $TOKEN" \
+  "${FORGEJO_URL}/api/v1/admin/users?page=1&limit=50"
+```
+
+---
+
+## Admin — Destructive (1 operation) — DESTRUCTIVE — confirm before executing
+
+### 18. Create user
 
 `POST /api/v1/admin/users`
 
 Body: `{"email":"<email>","username":"<username>","password":"<strong-random-password>","must_change_password":true,"source_id":0}`
 
 NOTE: Generate a strong random password — do not hardcode a weak value. Use `openssl rand -base64 18` or similar, and communicate it to the admin out-of-band. `must_change_password: true` ensures the user sets their own password on first login.
+
+**DESTRUCTIVE — requires user confirmation before executing.**
 
 ```bash
 curl -s -w '\n%{http_code}' \
@@ -263,17 +282,6 @@ curl -s -w '\n%{http_code}' \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.org","username":"newuser","password":"<generated-strong-password>","must_change_password":true,"source_id":0}' \
   "${FORGEJO_URL}/api/v1/admin/users"
-```
-
-### 18. List users
-
-`GET /api/v1/admin/users?page=1&limit=50`
-
-```bash
-curl -s -w '\n%{http_code}' \
-  --connect-timeout 10 --max-time 30 \
-  -H "Authorization: token $TOKEN" \
-  "${FORGEJO_URL}/api/v1/admin/users?page=1&limit=50"
 ```
 
 ---

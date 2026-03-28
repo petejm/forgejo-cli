@@ -6,5 +6,7 @@
     "name": "Peter McDade",
     "url": "https://github.com/petejm"
   },
-  "keywords": ["forgejo", "gitea", "api", "git", "self-hosted", "repos", "issues", "pull-requests"]
+  "keywords": ["forgejo", "gitea", "api", "git", "self-hosted", "repos", "issues", "pull-requests"],
+  "license": "MIT",
+  "homepage": "https://github.com/petejm/forgejo-cli"
 }
