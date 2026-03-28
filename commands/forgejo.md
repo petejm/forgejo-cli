@@ -11,13 +11,13 @@ forgejo-cli — Forgejo/Gitea API operations
 Usage: /forgejo <operation> [args...]
 
 Available operations:
-  repos     — create, list, get, delete, search repositories
-  issues    — list, create, comment, close/reopen issues
-  prs       — list, create, merge pull requests
-  users     — get current user, list users (admin)
-  orgs      — create org, list org repos
-  admin     — create user (DESTRUCTIVE — requires confirmation)
-  tokens    — create and list API tokens
+  repo      — create, list, get, delete, search repositories
+  issue     — list, create, comment, close/reopen issues
+  pr        — list, create, merge pull requests
+  user      — get current user, list users (admin)
+  org       — create org, list org repos
+  admin     — list users, create user (DESTRUCTIVE — requires confirmation)
+  token     — create and list API tokens
   api       — raw API call: /forgejo api GET /repos/owner/repo
   swagger   — discover endpoints from your instance's Swagger spec
 

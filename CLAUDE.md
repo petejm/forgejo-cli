@@ -38,3 +38,4 @@ The evals cover auth pattern selection, curl construction, pagination, and destr
 - **Never use `echo "$response"`** to split curl output — use `printf '%s\n' "$response"` to preserve trailing newlines correctly when separating body from status code.
 - **Destructive operations** (DELETE, admin POST) must always require explicit user confirmation. Do not relax this guardrail.
 - Keep `references/endpoints.md` in sync with `SKILL.md` Section 4 — both list the 20 supported operations and their DESTRUCTIVE classifications.
+- Keep the **canonical curl pattern** in sync between `SKILL.md` Section 3 and `references/auth-patterns.md` Section 6 — both define the response parsing and error handling template.

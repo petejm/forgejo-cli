@@ -1,12 +1,12 @@
 {
   "name": "forgejo-cli",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "description": "Forgejo API client — repo management, issues, PRs, orgs, admin. Use when interacting with Forgejo or Gitea instances, managing repositories, issues, pull requests, organizations, or performing admin operations via the REST API.",
   "author": {
     "name": "Peter McDade",
     "url": "https://github.com/petejm"
   },
-  "keywords": ["forgejo", "gitea", "api", "git", "self-hosted", "repos", "issues", "pull-requests"],
+  "keywords": ["forgejo", "gitea", "api", "git", "self-hosted", "repos", "issues", "pull-requests", "tokens", "admin"],
   "license": "MIT",
   "homepage": "https://github.com/petejm/forgejo-cli"
 }

@@ -192,6 +192,8 @@ curl -s -w '\n%{http_code}' \
 
 Body: `{"Do":"merge","MergeMessageField":"<optional>"}` (`Do` values: merge, rebase, squash, rebase-merge)
 
+**DESTRUCTIVE — requires user confirmation before executing.**
+
 ```bash
 curl -s -w '\n%{http_code}' \
   --connect-timeout 10 --max-time 30 \
@@ -299,10 +301,10 @@ Body: `{"name":"<token-name>","scopes":["write:repository","write:issue","write:
 ```bash
 curl -s -w '\n%{http_code}' \
   --connect-timeout 10 --max-time 30 \
-  --netrc-file <(echo "machine $HOST login $USER password $PASS") \
+  --netrc-file <(echo "machine $HOST login $FORGEJO_USER password $PASS") \
   -H "Content-Type: application/json" \
   -d '{"name":"my-token","scopes":["write:repository","write:issue"]}' \
-  "${FORGEJO_URL}/api/v1/users/${USER}/tokens"
+  "${FORGEJO_URL}/api/v1/users/${FORGEJO_USER}/tokens"
 ```
 
 ### 20. List tokens
@@ -314,8 +316,8 @@ Also requires basic auth.
 ```bash
 curl -s -w '\n%{http_code}' \
   --connect-timeout 10 --max-time 30 \
-  --netrc-file <(echo "machine $HOST login $USER password $PASS") \
-  "${FORGEJO_URL}/api/v1/users/${USER}/tokens"
+  --netrc-file <(echo "machine $HOST login $FORGEJO_USER password $PASS") \
+  "${FORGEJO_URL}/api/v1/users/${FORGEJO_USER}/tokens"
 ```
 
 ---
@@ -326,10 +328,10 @@ For operations beyond the supported 20, discover endpoints from the instance its
 
 ```bash
 # List all endpoint paths matching a keyword
-KEYWORD="release"  # change this
+KEYWORD="webhook"  # change this
 curl -s "${FORGEJO_URL}/swagger.v1.json" | python3 -c "
 import json, sys
-keyword = sys.argv[1] if len(sys.argv) > 1 else 'release'
+keyword = sys.argv[1] if len(sys.argv) > 1 else 'webhook'
 spec = json.load(sys.stdin)
 for path, methods in spec['paths'].items():
     if keyword in path or any(keyword in str(op) for op in methods.values()):

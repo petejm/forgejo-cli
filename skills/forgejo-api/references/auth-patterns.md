@@ -37,6 +37,8 @@ AUTH_METHOD=$(grep "^auth_method:" ~/.claude/forgejo-cli.local.md | sed 's/^auth
 
 **Note:** The `.local.md` file should contain ONLY YAML frontmatter between `---` delimiters. Do not add markdown content below the closing `---`. Anything after the closing delimiter is ignored by the parser and may cause unexpected grep results.
 
+**WARNING:** If content exists below the closing `---`, `grep`-based parsing may match lines in the body and produce multi-line variable values. `eval` on a multi-line `TOKEN_CMD` executes multiple commands with unpredictable results. Always keep `.local.md` files as frontmatter-only.
+
 ---
 
 ## Section 3: token-cmd Auth (Happy Path)
@@ -45,16 +47,18 @@ The preferred method — works with any secret manager.
 
 ```bash
 # Read token_cmd from config
-TOKEN_CMD=$(grep "^token_cmd:" ~/.claude/forgejo-cli.local.md | sed 's/^token_cmd: *//' | sed 's/^"\(.*\)"$/\1/')
-# Execute it to get the token (set +x prevents trace leakage)
+TOKEN_CMD=$(grep "^token_cmd:" ~/.claude/forgejo-cli.local.md | sed 's/^token_cmd: *//' | sed 's/^["'"'"']\(.*\)["'"'"']$/\1/')
+# Execute it to get the token (suppress trace to prevent credential leakage)
 # Trust boundary: token_cmd is user-configured — it runs with the same privilege as any
 # shell alias or .envrc command. The command value is logged (not the token) so the user
 # can verify what is being invoked.
 # SECURITY WARNING: Never accept token_cmd values from untrusted sources or third-party
 # plugin configs. A compromised .local.md file enables arbitrary code execution at the
 # privilege level of the Claude Code process.
+TRACE_WAS_ON=false; [[ "$-" == *x* ]] && TRACE_WAS_ON=true
 set +x
 TOKEN=$(eval "$TOKEN_CMD")
+$TRACE_WAS_ON && set -x
 if [ -z "$TOKEN" ]; then echo "Error: token_cmd produced no output" >&2; exit 1; fi
 # Use in curl
 curl -s -w '\n%{http_code}' \
@@ -79,10 +83,12 @@ OP_PASS_FIELD=$(grep "^op_password_field:" ~/.claude/forgejo-cli.local.md | sed 
 : "${OP_USER_FIELD:=username}"
 : "${OP_PASS_FIELD:=password}"
 
-# Resolve credentials (set +x prevents trace leakage)
+# Resolve credentials (save trace state, suppress to prevent credential leakage)
+TRACE_WAS_ON=false; [[ "$-" == *x* ]] && TRACE_WAS_ON=true
 set +x
 OP_USER=$(op item get "$OP_ITEM" --fields "$OP_USER_FIELD" --reveal)
 OP_PASS=$(op item get "$OP_ITEM" --fields "$OP_PASS_FIELD" --reveal)
+$TRACE_WAS_ON && set -x
 HOST=$(echo "$FORGEJO_URL" | sed 's|https\?://||' | sed 's|/.*||')
 
 # Validate credentials contain no newlines (would break netrc format)
@@ -107,7 +113,6 @@ IMPORTANT: The process substitution `<(echo ...)` MUST appear inline in the curl
 Least preferred — env vars visible to child processes.
 
 ```bash
-# Least preferred — env vars visible to child processes
 TOKEN="${FORGEJO_TOKEN:-}"
 if [ -z "$TOKEN" ]; then
   echo "Error: FORGEJO_TOKEN not set" >&2
@@ -133,6 +138,11 @@ response=$(curl -s -w '\n%{http_code}' \
   "${FORGEJO_URL}/api/v1/<endpoint>")
 http_code=$(printf '%s\n' "$response" | tail -1)
 body=$(printf '%s\n' "$response" | sed '$d')
+[[ "$http_code" == "204" ]] && body=""
+if [[ "$http_code" != "200" && "$http_code" != "201" && "$http_code" != "204" ]]; then
+  echo "API error $http_code: $(printf '%s\n' "$body" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("message","unknown"))')" >&2
+  exit 1
+fi
 ```
 
 Always check http_code before parsing body. Error classification:
@@ -156,10 +166,10 @@ Creating an API token always requires basic auth — even if you have a token al
 ```bash
 # Process substitution required — token creation endpoint only accepts basic auth
 curl -s -w '\n%{http_code}' \
-  --netrc-file <(echo "machine $HOST login $USER password $PASS") \
+  --netrc-file <(echo "machine $HOST login $FORGEJO_USER password $PASS") \
   -H "Content-Type: application/json" \
   -d '{"name":"my-token","scopes":["write:repository","write:issue"]}' \
-  "${FORGEJO_URL}/api/v1/users/${USER}/tokens"
+  "${FORGEJO_URL}/api/v1/users/${FORGEJO_USER}/tokens"
 ```
 
 ---

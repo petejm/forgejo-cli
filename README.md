@@ -2,7 +2,7 @@
 
 A [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin that teaches Claude to interact with any [Forgejo](https://forgejo.org/) or [Gitea](https://gitea.com/) instance via the REST API.
 
-20 supported operations covering repos, issues, pull requests, organizations, users, admin, and API tokens — plus Swagger-based discovery for the full 291-endpoint API surface.
+20 supported operations covering repos, issues, pull requests, organizations, users, admin, and API tokens — plus Swagger-based discovery for your instance's full API surface.
 
 ## Why
 
@@ -34,7 +34,7 @@ alias claude-forgejo="claude --plugin-dir /path/to/forgejo-cli"
 
 ## Configure
 
-Create `~/.claude/forgejo-cli.local.md` with your instance URL and auth method. This file stores **pointers to secrets, never secrets themselves**. It's gitignored by default.
+Create `~/.claude/forgejo-cli.local.md` with your instance URL and auth method. This file stores **pointers to secrets, never secrets themselves**. The plugin's `.gitignore` prevents accidental commits if a config file is placed inside the repo directory.
 
 ### Option A: token-cmd (recommended)
 
@@ -47,6 +47,8 @@ auth_method: token-cmd
 token_cmd: "op item get my-forgejo --fields password --reveal"
 ---
 ```
+
+> **Security note:** The `token_cmd` value is executed as a shell command via `eval`. Only use commands you trust. A compromised `.local.md` file enables arbitrary code execution at the Claude Code process privilege level.
 
 Other secret manager examples:
 
@@ -179,6 +181,7 @@ Or explore interactively at `<your-instance>/api/swagger`.
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (CLI)
 - `curl` and `jq` (for pagination)
+- `python3` (for error message parsing and Swagger discovery)
 - A Forgejo or Gitea instance with API access
 - A secret manager for credentials (1Password CLI, `pass`, macOS Keychain, etc.)
 

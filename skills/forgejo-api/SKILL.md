@@ -37,7 +37,7 @@ Read this file with the Read tool at the start of every session. If it does not 
 ---
 forgejo_url: https://forgejo.example.org
 auth_method: token-cmd
-token_cmd: "op item get my-item --fields password --reveal"
+token_cmd: "op item get my-forgejo --fields password --reveal"
 ---
 ```
 
@@ -46,7 +46,7 @@ token_cmd: "op item get my-item --fields password --reveal"
 ---
 forgejo_url: https://forgejo.example.org
 auth_method: op
-op_item: my-item
+op_item: my-forgejo
 op_username_field: username
 op_password_field: password
 ---
@@ -85,6 +85,8 @@ Quick auth patterns (full examples in `references/auth-patterns.md`):
 - token-cmd/env: `-H "Authorization: token $TOKEN"`
 - op basic auth: `--netrc-file <(echo "machine $HOST login $USER password $PASS")`
 
+Use `--reveal` flag when resolving credentials: `op item get "$ITEM" --fields "$FIELD" --reveal`
+
 Note: Forgejo also accepts `Authorization: Bearer $TOKEN` (the modern standard). Both `token` and `Bearer` formats work identically.
 
 **Step 4:** Check the HTTP status code before treating credentials as valid. If credentials resolve but the API returns 401, re-read gotchas #1 and #3 before resetting passwords.
@@ -103,7 +105,7 @@ response=$(curl -s -w '\n%{http_code}' \
   "${FORGEJO_URL}/api/v1/<endpoint>")
 http_code=$(printf '%s\n' "$response" | tail -1)
 body=$(printf '%s\n' "$response" | sed '$d')
-[ "$http_code" = "204" ] && body=""
+[[ "$http_code" == "204" ]] && body=""
 
 # Always check status before parsing
 if [[ "$http_code" != "200" && "$http_code" != "201" && "$http_code" != "204" ]]; then
@@ -111,6 +113,8 @@ if [[ "$http_code" != "200" && "$http_code" != "201" && "$http_code" != "204" ]]
   exit 1
 fi
 ```
+
+**Input validation:** When constructing URLs from user-provided values (repo names, usernames, issue numbers), validate that they contain only alphanumeric characters, hyphens, underscores, and dots. Never interpolate unsanitized natural language input into shell commands.
 
 **Error classification:**
 
@@ -147,7 +151,7 @@ fi
 **Pull Requests:**
 - `GET /api/v1/repos/{owner}/{repo}/pulls` — list PRs
 - `POST /api/v1/repos/{owner}/{repo}/pulls` — create PR
-- `POST /api/v1/repos/{owner}/{repo}/pulls/{index}/merge` — merge PR
+- `POST /api/v1/repos/{owner}/{repo}/pulls/{index}/merge` — merge PR (DESTRUCTIVE)
 
 **Users & Orgs:**
 - `GET /api/v1/user` — get current user (auth verification)
@@ -216,9 +220,9 @@ These 10 lessons are hard-won. Read carefully before debugging auth or API failu
 
 6. **"repo already exists" is HTTP 409** — handle it gracefully, not as an error. In most workflows this is an idempotent condition, not a failure.
 
-7. **`--exit-code` is not a valid `git ls-remote` flag** — it's a `git diff` flag. Common copy-paste error that produces a confusing "unknown switch" message.
+7. **`--exit-code` is not a valid `git ls-remote` flag** — it's a `git diff` flag. Common copy-paste error that produces a confusing "unknown switch" message. Encountered during Forgejo setup scripts that combine git and API calls.
 
-8. **Pagination**: Forgejo uses Link header + `x-total-count`. Default page size 30, max 50. Always handle pagination for list operations or you silently miss results.
+8. **Pagination**: Forgejo uses `page` + `limit` query params and `x-total-count` response header. Default page size 30, max 50. Always handle pagination for list operations or you silently miss results.
 
 9. **2FA**: if enabled on the account, add `X-Forgejo-OTP: <code>` header to all requests. Without it, 2FA-protected accounts return 401 with no useful message.
 
@@ -232,10 +236,10 @@ For endpoints not in the supported 20, the Forgejo Swagger spec is the authorita
 
 ```bash
 # Find endpoints matching a keyword
-KEYWORD="release"  # change this
+KEYWORD="webhook"  # change this
 curl -s "${FORGEJO_URL}/swagger.v1.json" | python3 -c "
 import json, sys
-keyword = sys.argv[1] if len(sys.argv) > 1 else 'release'
+keyword = sys.argv[1] if len(sys.argv) > 1 else 'webhook'
 spec = json.load(sys.stdin)
 for path, methods in spec['paths'].items():
     if keyword in path or any(keyword in str(op) for op in methods.values()):
@@ -246,7 +250,7 @@ for path, methods in spec['paths'].items():
 curl -s "${FORGEJO_URL}/swagger.v1.json" | python3 -c "
 import json, sys
 spec = json.load(sys.stdin)
-print(json.dumps(spec['paths']['/api/v1/repos/{owner}/{repo}/releases']['post'], indent=2))
+print(json.dumps(spec['paths']['/api/v1/path/here'], indent=2))
 "
 ```
 
@@ -256,7 +260,7 @@ Forgejo's web UI has a Swagger explorer at `<forgejo_url>/api/swagger`. Useful f
 
 ## Section 8: Destructive Operations
 
-For all DELETE methods and admin operations that modify or remove user, org, or repo state:
+For all DELETE methods, merge operations, and admin operations that modify or remove user, org, or repo state:
 
 1. Tell the user what will happen in plain language
 2. Show the exact curl command that will run (with credentials redacted — show `[TOKEN]` or `[PASSWORD]`)
