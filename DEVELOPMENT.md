@@ -18,7 +18,7 @@ skills/
 evals/
   evals.json           — eval test cases
 README.md              — user-facing documentation
-CLAUDE.md              — this file
+DEVELOPMENT.md         — this file
 ```
 
 ## How to Test
