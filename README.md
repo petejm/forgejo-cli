@@ -57,7 +57,7 @@ Works with any secret manager — 1Password, `pass`, HashiCorp Vault, macOS Keyc
 ---
 forgejo_url: https://forgejo.example.org
 auth_method: token-cmd
-token_cmd: "op read op://my-vault/my-forgejo/password"
+token_cmd: "op read op://<vault>/<item>/<field>"
 ---
 ```
 

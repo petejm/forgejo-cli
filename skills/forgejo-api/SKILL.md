@@ -39,7 +39,7 @@ token-cmd (preferred):
 ---
 forgejo_url: https://forgejo.example.org
 auth_method: token-cmd
-token_cmd: "op read op://my-vault/my-forgejo/password"
+token_cmd: "op read op://<vault>/<item>/<field>"
 ---
 ```
 

@@ -15,7 +15,7 @@ The config file lives at `~/.claude/forgejo-cli.local.md`. Claude reads it with 
 forgejo_url: https://forgejo.example.org
 auth_method: token-cmd      # token-cmd | op | env
 # token-cmd: any command that outputs a token to stdout
-token_cmd: "op read op://my-vault/my-forgejo/password"
+token_cmd: "op read op://<vault>/<item>/<field>"
 # op: 1Password direct integration
 op_item: my-forgejo
 op_username_field: username   # matched by `--fields label=<value>`

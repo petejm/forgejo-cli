@@ -79,6 +79,10 @@ All notable changes to forgejo-cli are documented here.
 - Admin help text now includes "list users" alongside "create user"
 - Hardcoded "291-endpoint" count in README replaced with version-independent "your instance's full API surface"
 - Placeholder names standardized to `my-forgejo` across all config examples
+- 1Password secret-reference examples use the schematic form `op://<vault>/<item>/<field>`
+  (README, SKILL.md, auth-patterns.md). Angle brackets mark them unambiguously as
+  placeholders rather than a copyable reference to a real vault, which also keeps secret
+  scanners from flagging documentation whose only job is to teach the syntax
 - Gotcha #7 (`--exit-code`) now includes context note about Forgejo setup scripts
 - `.gitignore` description in README clarified (protects repo directory, not `~/.claude/`)
 
