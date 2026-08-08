@@ -18,18 +18,31 @@ This plugin encodes 10 hard-won lessons so Claude never makes these mistakes.
 
 ## Install
 
-```bash
-# Clone the plugin
-git clone https://github.com/petejm/forgejo-cli.git
+### From the marketplace (persists across sessions)
 
-# Start Claude Code with the plugin
-claude --plugin-dir /path/to/forgejo-cli
+Inside Claude Code:
+
+```
+/plugin marketplace add petejm/forgejo-cli
+/plugin install forgejo-cli@petejm-plugins
 ```
 
-Or add to your startup alias:
+The plugin then loads in every future session. Update later with `/plugin marketplace update petejm-plugins` and `/plugin update forgejo-cli`.
+
+### Try it without installing (this session only)
 
 ```bash
-alias claude-forgejo="claude --plugin-dir /path/to/forgejo-cli"
+# Clone the plugin
+git clone https://github.com/petejm/forgejo-cli.git ~/src/forgejo-cli
+
+# Start Claude Code with the plugin — the path must be the clone destination above
+claude --plugin-dir ~/src/forgejo-cli
+```
+
+`--plugin-dir` loads the plugin for the duration of that session only; it installs nothing. To get it on every launch this way, add a startup alias:
+
+```bash
+alias claude-forgejo="claude --plugin-dir ~/src/forgejo-cli"
 ```
 
 ## Configure
@@ -44,7 +57,7 @@ Works with any secret manager — 1Password, `pass`, HashiCorp Vault, macOS Keyc
 ---
 forgejo_url: https://forgejo.example.org
 auth_method: token-cmd
-token_cmd: "op item get my-forgejo --fields password --reveal"
+token_cmd: "op read op://my-vault/my-forgejo/password"
 ---
 ```
 
@@ -77,7 +90,7 @@ op_password_field: password
 ---
 ```
 
-**Important:** Use 1Password field **IDs**, not display labels. The Forgejo setup form often renames fields (e.g., `admin_confirm_passwd` is a label; `password` is the ID). Check with `op item get <item> --format json | jq '.fields[] | {id, label}'`.
+**Important:** The Forgejo setup form can rename fields, so the label you see is not necessarily what a lookup matches (e.g. an `admin_confirm_passwd` label sitting over a `password` field). Use the documented selector form — `op item get <item> --fields "label=password" --reveal` — and when a lookup comes back empty, inspect the item with `op item get <item> --format json | jq '.fields[] | {id, label}'` to see what is actually there.
 
 ### Option C: Environment variable
 
@@ -133,23 +146,23 @@ Just ask Claude — the skill triggers on Forgejo/Gitea-related requests:
 | **Admin** | Create user, list users | 2 |
 | **Tokens** | Create API token, list tokens | 2 |
 
-For the full 291-endpoint API, the plugin discovers endpoints from your instance's Swagger spec at runtime.
+For the rest of the API, the plugin discovers endpoints from your instance's Swagger spec at runtime.
 
 ## How It Works
 
 The plugin teaches Claude three things:
 
-1. **Auth patterns** — how to read config, resolve credentials from any secret manager, and construct `curl` calls safely (process substitution for basic auth, Bearer header for tokens)
+1. **Auth patterns** — how to read config, resolve credentials from any secret manager, and construct `curl` calls safely (process substitution for basic auth, `Authorization: token` header for tokens)
 
 2. **API patterns** — the canonical `curl` template with HTTP status checking, error classification, pagination, and timeout handling
 
 3. **Gotchas** — 10 lessons learned from real debugging sessions that prevent common failures
 
-Claude constructs all API calls inline — no helper scripts, no intermediary. Process substitution (`--netrc-file <(echo ...)`) keeps credentials off disk entirely.
+Claude constructs all API calls inline — no helper scripts, no intermediary. Process substitution (`--netrc-file <(printf 'machine %s login "%s" password "%s"\n' ...)`) hands `curl` an open file descriptor instead of a temp file on systems with `/dev/fd`, which includes Linux and macOS. The `printf` form with quoted values is load-bearing, not stylistic: netrc is whitespace-tokenized, so an unquoted value is silently truncated at the first space.
 
 ### Destructive operation guardrails
 
-DELETE operations and admin actions always require explicit user confirmation before execution. Claude will show you the exact command and wait for approval.
+DELETE operations, merges, and admin actions always require explicit user confirmation before execution. Claude will show you the exact command and wait for approval.
 
 ## Discovering More Endpoints
 
@@ -157,7 +170,7 @@ The 20 built-in operations cover the most common workflows. For anything beyond 
 
 ```bash
 # Search the Swagger spec for endpoints matching a keyword
-curl -s "https://forgejo.example.org/swagger.v1.json" | python3 -c "
+curl -s --connect-timeout 10 --max-time 30 "https://forgejo.example.org/swagger.v1.json" | python3 -c "
 import json, sys
 keyword = sys.argv[1] if len(sys.argv) > 1 else 'webhook'
 spec = json.load(sys.stdin)
@@ -172,9 +185,9 @@ Or explore interactively at `<your-instance>/api/swagger`.
 ## Security
 
 - **No secrets in files** — config stores pointers (1Password item IDs, commands, env var names), never credentials
-- **Process substitution** — basic auth credentials exist only as a file descriptor, never on disk
-- **Token auth** — uses `Authorization: token` header, no command-line exposure via `-u`
-- **Destructive ops gated** — DELETE and admin operations require explicit confirmation
+- **Process substitution** — on systems with `/dev/fd` (Linux, macOS), basic auth credentials are passed as an open file descriptor rather than a temp file: nothing to clean up, no race window
+- **Token auth** — uses the `Authorization: token` header rather than `-u`. Note the header value is still in `curl`'s argv, so it is visible to `ps` and to CI job logs exactly as `-u` would be. On a shared host, read the header from a file instead — `curl -H @<(printf 'Authorization: token %s\n' "$TOKEN")` keeps it out of the process table.
+- **Destructive ops gated** — DELETE, merge, and admin operations require explicit confirmation
 - **Timeouts** — all `curl` calls include `--connect-timeout 10 --max-time 30`
 
 ## Requirements

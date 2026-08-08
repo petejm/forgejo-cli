@@ -13,3 +13,8 @@ credentials*
 *.swp
 *.swo
 *~
+
+# Python bytecode from tests/checks/ — tests/lint.sh sets
+# PYTHONDONTWRITEBYTECODE=1, but running a check script directly still emits it
+__pycache__/
+*.pyc

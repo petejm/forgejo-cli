@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "petejm-plugins",
+  "description": "Claude Code plugins by Peter McDade.",
+  "owner": {
+    "name": "Peter McDade",
+    "url": "https://github.com/petejm"
+  },
+  "plugins": [
+    {
+      "name": "forgejo-cli",
+      "source": {
+        "source": "github",
+        "repo": "petejm/forgejo-cli"
+      },
+      "version": "1.2.0",
+      "description": "Forgejo API client — repo management, issues, PRs, orgs, admin. Use when interacting with Forgejo or Gitea instances, managing repositories, issues, pull requests, organizations, or performing admin operations via the REST API.",
+      "author": {
+        "name": "Peter McDade",
+        "url": "https://github.com/petejm"
+      },
+      "homepage": "https://github.com/petejm/forgejo-cli",
+      "repository": "https://github.com/petejm/forgejo-cli",
+      "license": "MIT",
+      "keywords": ["forgejo", "gitea", "api", "git", "self-hosted", "repos", "issues", "pull-requests", "tokens", "admin"],
+      "category": "developer-tools"
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "forgejo-cli",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Forgejo API client — repo management, issues, PRs, orgs, admin. Use when interacting with Forgejo or Gitea instances, managing repositories, issues, pull requests, organizations, or performing admin operations via the REST API.",
   "author": {
     "name": "Peter McDade",
@@ -8,5 +9,6 @@
   },
   "keywords": ["forgejo", "gitea", "api", "git", "self-hosted", "repos", "issues", "pull-requests", "tokens", "admin"],
   "license": "MIT",
-  "homepage": "https://github.com/petejm/forgejo-cli"
+  "homepage": "https://github.com/petejm/forgejo-cli",
+  "repository": "https://github.com/petejm/forgejo-cli"
 }

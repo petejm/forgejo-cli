@@ -1,0 +1,51 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Nothing in this repository needs a write token, a secret, or an OIDC
+# identity. The lint suite reads files and exits. Keep this at read-only:
+# a docs-and-shell plugin has no build to publish and no package to sign.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: lint (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # macos-latest is the point of this matrix, not redundancy. Its
+        # /bin/bash is 3.2.57 and its sed/grep are BSD, so it is the leg that
+        # actually enforces the bash 3.2 target this plugin tells its users to
+        # write for. A repo whose product is teaching shell has to be the
+        # lowest common denominator it claims to be.
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Record interpreter versions
+        run: |
+          echo "/bin/bash: $(/bin/bash --version | head -1)"
+          echo "python3:   $(python3 --version 2>&1)"
+          echo "sed:       $(command -v sed)"
+
+      # Invoked as `/bin/bash tests/lint.sh`, never `./tests/lint.sh`: the
+      # shebang re-resolves PATH, and on macOS runners that can find a Homebrew
+      # bash 5, which would silently defeat the whole reason this leg exists.
+      - name: Lint
+        run: /bin/bash tests/lint.sh
+
+      # Proves each check still goes red when its subject is broken. A lint
+      # rule whose pattern has drifted reports the same green as a clean tree,
+      # so "the suite passed" is only meaningful alongside this.
+      - name: Self-test (prove the checks can fail)
+        run: /bin/bash tests/self-test.sh
